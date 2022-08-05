@@ -123,10 +123,12 @@ else
     then
         DIST_PREFIX_VERSION=""
     fi
-    for addon in $(ls setup/ -I README -I _metapackage) ; do
-        addon_dist="odoo${DIST_PREFIX_VERSION}-addon-${addon}"
-        echo "-e file://${PWD}/setup/${addon}#egg=${addon_dist}" >> test-requirements.txt
-    done
+    # Do not try to install module dependencies from PYPI
+    # for addon in $(ls setup/ -I README -I _metapackage) ; do
+    #     addon_dist="odoo${DIST_PREFIX_VERSION}-addon-${addon}"
+    #     echo "-e file://${PWD}/setup/${addon}#egg=${addon_dist}" >> test-requirements.txt
+    # done
+
 fi
 
 # Install requirements from PyPI
