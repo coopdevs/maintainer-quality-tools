@@ -105,8 +105,8 @@ if [[ "${MQT_DEP}" == "OCA" ]] ; then
     pip install -q -r ${ODOO_PATH}/requirements.txt
     pip install -q QUnitSuite
 
-    echo "Getting addons dependencies"
-    clone_oca_dependencies
+    # echo "Getting addons dependencies"
+    # clone_oca_dependencies
 else
     pip install --upgrade pip "setuptools<58" wheel
     # Needed for tour tests to not be skipped
@@ -123,6 +123,11 @@ else
     then
         DIST_PREFIX_VERSION=""
     fi
+
+    echo "travis_build_dir: ${TRAVIS_BUILD_DIR}"
+    echo "$(ls ${TRAVIS_BUILD_DIR})"
+    echo "$(ls ${HOME}/dependencies)"
+
     # Do not try to install module dependencies from PYPI
     # for addon in $(ls setup/ -I README -I _metapackage) ; do
     #     addon_dist="odoo${DIST_PREFIX_VERSION}-addon-${addon}"
@@ -130,6 +135,9 @@ else
     # done
 
 fi
+
+echo "Test requirements:"
+echo "$(cat test-requirements.txt)"
 
 # Install requirements from PyPI
 pip install --pre -r test-requirements.txt
