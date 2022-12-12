@@ -8,7 +8,7 @@ if [ "${LINT_CHECK}" != "0" ]; then
     # Install pylint plugin depends without lxml
     wget -q https://raw.githubusercontent.com/OCA/pylint-odoo/master/requirements.txt -O ${HOME}/maintainer-quality-tools/travis/pylint_odoo_requirements.txt
     pip install --upgrade -r ${HOME}/maintainer-quality-tools/travis/pylint_odoo_requirements.txt
-    pip install --upgrade --pre --no-deps git+https://github.com/OCA/pylint-odoo.git   # To use last version ever
+    pip install --upgrade --pre --no-deps git+https://github.com/OCA/pylint-odoo.git@v8.0.4   # To use last version ever
     npm install -g eslint  # Extra package for pylint-odoo plugin
     if [ -f "${HOME}/.nvm/nvm.sh" ]; then
         # Update nodejs v11.latest required by eslint
@@ -61,10 +61,23 @@ if [ "x${ODOO_BRANCH}" == "x"  ] ; then
     ODOO_BRANCH=${VERSION}
 fi
 
-: ${ODOO_REPO:="odoo/odoo"}  # default value, if not set
-IFS="/" read -a REPO <<< "${ODOO_REPO}"
-export REMOTE="${REPO[0],,}"
-export REPO_NAME="${REPO[1]}"
+# ***** Start commented block ******
+# This block of code is commented because we don't use Odoo from Gitlab or Github,
+# we mantain our Gitlab infra and a mirror of OCB with our releases.
+# We must declare the vars REMOTE and REPO_NAME but we can use this split method
+# because we have two slashes in the URL:
+#
+# https://git.coopdevs.org/coopdevs/odoo/OCB
+#
+# In this case the ODOO_REPO will be `coopdevs/odoo/OCB` and the REMOTE will
+# be `coopdevs` and REPO_NAME `odoo` but the correct value is `OCB`.
+#
+#: ${ODOO_REPO:="odoo/odoo"}  # default value, if not set
+#IFS="/" read -a REPO <<< "${ODOO_REPO}"
+#export REMOTE="${REPO[0],,}"
+#export REPO_NAME="${REPO[1]}"
+#
+# ***** End commented block ******
 export BRANCH="${ODOO_BRANCH}"
 export PULL_REQUEST=''
 # If the branch is a pull request
@@ -78,19 +91,8 @@ if [ -d "${REPO_CACHED}/odoo" ]; then
     ln -sf ${REPO_CACHED}/odoo ${ODOO_PATH}
 else
     echo "Downloading Odoo"
-    git clone --depth=50 https://github.com/$REMOTE/$REPO_NAME.git -b $BRANCH ${ODOO_PATH}
-    git --work-tree=${ODOO_PATH} --git-dir=${ODOO_PATH}/.git remote rename origin $REMOTE
-fi
-if [ "x${PULL_REQUEST}" == "x" ] ; then
-    git --work-tree=${ODOO_PATH} --git-dir=${ODOO_PATH}/.git fetch --depth=1 ${REMOTE} ${BRANCH} \
-        && git --work-tree=${ODOO_PATH} --git-dir=${ODOO_PATH}/.git config --local --bool core.bare false \
-        && git --work-tree=${ODOO_PATH} --git-dir=${ODOO_PATH}/.git checkout -b ${BRANCH}-${REMOTE} -qf ${REMOTE}/${BRANCH}
-else
-    # Is a pull request
-    git --work-tree=${ODOO_PATH} --git-dir=${ODOO_PATH}/.git reset --hard
-    git --work-tree=${ODOO_PATH} --git-dir=${ODOO_PATH}/.git fetch --depth=1 ${REMOTE} $PULL_REQUEST/head:${BRANCH}-${REMOTE} \
-        && git --work-tree=${ODOO_PATH} --git-dir=${ODOO_PATH}/.git config --local --bool core.bare false \
-        && git --work-tree=${ODOO_PATH} --git-dir=${ODOO_PATH}/.git checkout ${BRANCH}-${REMOTE}
+    git clone --depth=50 https://${REPO_PLATFORM:=github.com}/$REMOTE/$REPO_NAME.git -b $BRANCH ${ODOO_PATH}
+    # git --work-tree=${ODOO_PATH} --git-dir=${ODOO_PATH}/.git remote rename origin $REMOTE
 fi
 
 # Odoo <= 7.0 doesn't have requirements.txt file, then the 8.0 file is used by default
@@ -140,11 +142,8 @@ else
     done
 fi
 
-# Use a package index that redirects to the OCA wheelhouse for Odoo addons,
-# and to pypi.org for all other packages. This is to make sure we don't
-# inadvertently accepts non-OCA addons in dependencies.
-pip install --pre -r test-requirements.txt \
-    --index-url https://wheelhouse.odoo-community.org/oca-simple-and-pypi/
+# Install requirements from PyPI
+pip install --pre -r test-requirements.txt
 
 # Use reference .coveragerc
 cp ${HOME}/maintainer-quality-tools/cfg/.coveragerc .
